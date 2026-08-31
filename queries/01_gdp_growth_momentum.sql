@@ -18,6 +18,11 @@ WITH gdp_growth AS (
         FROM gdp_growth 
     )
     
+    ,ranked_growth AS (
+        SELECT country_name, country_code, year, gdp_growth_pct, prior_year_growth_pct,
+        RANK () OVER(PARTITION BY year ORDER BY gdp_growth_pct DESC) AS growth_rank_that_year
+        FROM growth_with_prior
+    )
 
 
 SELECT 
@@ -26,6 +31,7 @@ SELECT
     , year 
     , CONCAT((ROUND(gdp_growth_pct, 2)), '%') AS gdp_pct_display
     , CONCAT((ROUND(prior_year_growth_pct , 2)), '%') AS  prior_year_growth_display
+    , growth_rank_that_year
 
-FROM growth_with_prior
-ORDER BY country_name, year;    
+FROM ranked_growth
+ORDER BY year, growth_rank_that_year;    
