@@ -6,3 +6,4 @@ venv/
 .venv/
 *.png
 !docs/*.png
+.DS_Store
