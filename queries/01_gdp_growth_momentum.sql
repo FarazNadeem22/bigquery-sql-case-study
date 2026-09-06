@@ -29,8 +29,10 @@ SELECT
     country_name
     ,country_code
     , year 
-    , CONCAT((ROUND(gdp_growth_pct, 2)), '%') AS gdp_pct_display
-    , CONCAT((ROUND(prior_year_growth_pct , 2)), '%') AS  prior_year_growth_display
+    --, CONCAT((ROUND(gdp_growth_pct, 2)), '%') AS gdp_pct_display
+    --, CONCAT((ROUND(prior_year_growth_pct , 2)), '%') AS  prior_year_growth_display
+    , gdp_growth_pct
+    , prior_year_growth_pct
     , growth_rank_that_year
 
 FROM ranked_growth
