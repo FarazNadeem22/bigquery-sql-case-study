@@ -1,56 +1,67 @@
 """
-Pull the revenue-momentum query result from BigQuery into pandas, summarize,
-and chart it. Fill in PROJECT_ID and the query file path once your BigQuery
-sandbox is set up (Week 1 of the course).
+Pull the GDP growth momentum query result from BigQuery into a pandas Dataframe
 """
 from pathlib import Path
-
-import matplotlib.pyplot as plt
 import pandas as pd
 from google.cloud import bigquery
+import time
+import subprocess
+import os
+import matplotlib.pyplot as plt
 
-PROJECT_ID = "your-project-id"
-QUERY_PATH = Path(__file__).parent.parent / "queries" / "01_revenue_momentum.sql"
+PROJECT_ID = "placeholder"
+QUERY_PATH = Path(__file__).parent.parent / "queries" / "01_gdp_growth_momentum.sql"
+CHART_PATH = Path(__file__).parent.parent/ "gdp_growth_momentum.png"
 
-
-def load_data(project_id: str, query_path: Path) -> pd.DataFrame:
-    client = bigquery.Client(project=project_id)
+def load_data(query_path: Path) -> pd.DataFrame:
+    client = bigquery.Client()
     query = query_path.read_text()
     return client.query(query).to_dataframe()
 
-
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
-    """Average momentum rank and growth by sector, most recent quarter first."""
-    return (
-        df.groupby(["sector", "fiscal_quarter"])
-        .agg(avg_qoq_growth=("qoq_growth", "mean"), n_companies=("company_name", "count"))
+    """
+    Average growth rank and growth rate per county, across all years. 
+    lower ave_growth_rank = more consistently streong growth momentum
+    """
+    summary = (
+        df.groupby(["country_name", "country_code"])
+        .agg(
+            avg_growth_rank =("growth_rank_that_year", "mean"),
+            avg_gdp_growth_pct = ("gdp_growth_pct", "mean"),
+        )
         .reset_index()
-        .sort_values(["fiscal_quarter", "avg_qoq_growth"], ascending=[False, False])
+        .sort_values("avg_growth_rank")
+        .reset_index(drop=True)
     )
+    # summary["Rank"] = range(1, len(summary)+1)
+    summary.insert(0, "rank", range( 1, len(summary) + 1))
+    return summary
 
+def clear_screen():
+    if os.name == 'nt':
+        subprocess.run(["cls"], shell=True)
+    else:
+        subprocess.run(["clear"])
 
-def plot_sector_momentum(summary: pd.DataFrame, out_path: Path) -> None:
-    latest_quarter = summary["fiscal_quarter"].max()
-    latest = summary[summary["fiscal_quarter"] == latest_quarter]
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.barh(latest["sector"], latest["avg_qoq_growth"])
-    ax.set_xlabel("Avg QoQ revenue growth")
-    ax.set_title(f"Sector revenue momentum — {latest_quarter}")
-    ax.axvline(0, color="black", linewidth=0.8)
+def plot_momentum(summary: pd.DataFrame, out_path: Path):
+    fig, ax = plt.subplots(figsize=(8,5))
+    ax.bar(summary["country_name"], summary["avg_gdp_growth_pct"])
+    ax.axhline(0, color="black", linewidth=0.8)
+    ax.set_ylabel("Average GDP growth %, 2015-2020")
+    ax.set_xlabel("Country")
+    ax.set_title("GDP Growth Momentum by Country")
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
 
-
-def main() -> None:
-    df = load_data(PROJECT_ID, QUERY_PATH)
+def run():
+    df = load_data(QUERY_PATH)
     summary = summarize(df)
-    print(summary.to_string(index=False))
-
-    out_path = Path(__file__).parent.parent / "sector_momentum.png"
-    plot_sector_momentum(summary, out_path)
-    print(f"\nChart saved to {out_path}")
-
+    print(df)
+    time.sleep(1)
+    clear_screen()
+    print(summary)
+    plot_momentum(summary=summary, out_path=CHART_PATH)
+    print(f"Chart saved to: {CHART_PATH}")
 
 if __name__ == "__main__":
-    main()
+    run()
