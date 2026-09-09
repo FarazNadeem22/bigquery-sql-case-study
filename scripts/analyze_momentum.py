@@ -45,10 +45,10 @@ def clear_screen():
 
 def plot_momentum(summary: pd.DataFrame, out_path: Path):
     fig, ax = plt.subplots(figsize=(8,5))
-    ax.barh(summary["country_name"], summary["avg_gdp_growth_pct"])
-    ax.axvline(0, color="black", linewidth=0.8)
-    ax.invert_yaxis()
-    ax.set_xlabel("Average GDP growth %, 2015-2020")
+    ax.bar(summary["country_name"], summary["avg_gdp_growth_pct"])
+    ax.axhline(0, color="black", linewidth=0.8)
+    ax.set_ylabel("Average GDP growth %, 2015-2020")
+    ax.set_xlabel("Country")
     ax.set_title("GDP Growth Momentum by Country")
     fig.tight_layout()
     fig.savefig(out_path, dpi=150)
